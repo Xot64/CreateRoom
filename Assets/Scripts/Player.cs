@@ -59,7 +59,14 @@ public class Player : MonoBehaviour
         {
             inHand.canStand = (Mathf.Abs(hit.point.y - (onFocus.transform.position.y + onFocus.size.y)) < 0.01) && (onFocus != null);
 
-            inHand.transform.position = hit.point;
+        
+            offset = Vector3.zero;
+            inHand.canStand &= checkSpaceUnder();
+            if (!inHand.canStand) offset = Vector3.zero;
+            
+            
+
+            inHand.transform.position = hit.point + offset;
         }
         inHand.Recolor(true);
     }
@@ -77,6 +84,33 @@ public class Player : MonoBehaviour
         }
         
     }
-    
+    public Vector3 offset;
+    public bool checkSpaceUnder()
+    {
+        bool space = false;
+        if ((hit.point.x - inHand.size.x / 2) < onFocus.getBorder(Border.Left))
+        {
+            space = true;
+            offset -= Vector3.left * (onFocus.getBorder(Border.Left) - (hit.point.x - inHand.size.x / 2));
+        }
+        if ((hit.point.x + inHand.size.x / 2) > onFocus.getBorder(Border.Right))
+        {
+            if (space) return false;
+            offset += Vector3.right * (onFocus.getBorder(Border.Right) - (hit.point.x + inHand.size.x / 2));
+        }
+        space = false;
+        if ((hit.point.z - inHand.size.z / 2) < onFocus.getBorder(Border.Front)) 
+        {
+            offset -= Vector3.back * (onFocus.getBorder(Border.Front) - (hit.point.z - inHand.size.z / 2));
+            space = true;
+        }
+        if ((hit.point.z + inHand.size.z / 2) > onFocus.getBorder(Border.Back))
+        {
+            if (space) return false;
+            offset += Vector3.forward * (onFocus.getBorder(Border.Back) - (hit.point.z + inHand.size.z / 2));
+        }
+        return true;
+
+    }
     
 }
