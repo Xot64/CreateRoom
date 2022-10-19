@@ -64,9 +64,8 @@ public class Player : MonoBehaviour
             inHand.canStand &= checkSpaceUnder();
             if (!inHand.canStand) offset = Vector3.zero;
             
-            
-
-            inHand.transform.position = hit.point + offset;
+            inHand.canStand &= checkAround();
+            if (!inHand.canStand) offset = Vector3.zero;
         }
         inHand.Recolor(true);
     }
@@ -113,4 +112,47 @@ public class Player : MonoBehaviour
 
     }
     
+    public bool checkAround()
+    {
+        float[] hits = new float[4];
+        Vector3 rayStart = hit.point + offset;
+        hits[0] = localRays(rayStart, 4, Vector3.right);
+        hits[1] = localRays(rayStart, 4, Vector3.forward);
+        hits[2] = localRays(rayStart, 4, Vector3.left);
+        hits[3] = localRays(rayStart, 4, Vector3.back);
+        if (hits[2] + hits[0] < inHand.size.x) return false;
+        if (hits[3] + hits[1] < inHand.size.z) return false;
+
+        Vector3 delta = Vector3.zero;
+        if (hits[0] < inHand.size.x) delta -= Vector3.right * (inHand.size.x - hits[0]);
+        if (hits[1] < inHand.size.z) delta += Vector3.back * (inHand.size.z - hits[1]);
+        if (hits[2] < inHand.size.x) delta -= Vector3.left * (inHand.size.x - hits[2]);
+        if (hits[3] < inHand.size.z) delta += Vector3.forward * (inHand.size.z - hits[3]);
+        text.text = string.Format("R:{0:0.0}/{1:0.0}\nF:{2:0.0}/{3:0.0}\nL:{4:0.0}/{5:0.0}\nB:{6:0.0}/{7:0.0}", hits[0], delta.x, hits[1], delta.z, hits[2], delta.x, hits[3], delta.z);
+        if (((hits[0] < inHand.size.x / 2) || (hits[2] < inHand.size.x / 2)) &&
+            ((hits[1] < inHand.size.z / 2) || (hits[3] < inHand.size.z / 2)))
+        {
+            if (inHand.size.x - Mathf.Abs(delta.x) > inHand.size.z - Mathf.Abs(delta.z))
+                delta.z = 0;
+            else delta.x = 0;
+        }
+        offset += delta;
+        return true;
+    }
+
+    public float localRays(Vector3 center, int rays, Vector3 direction)
+    {
+        RaycastHit hit1;
+        Vector3 raysLine = new Vector3(direction.z * inHand.size.x, 0, direction.x * inHand.size.z) / rays;
+        float retVal = 10f;
+        for (int i = - rays / 2; i <= rays / 2; i++)
+        {
+            if (Physics.Raycast(center + raysLine * i  - new Vector3 (direction.x * inHand.size.x / 2, 0, direction.x * inHand.size.z / 2), direction, out hit1, new Vector3(inHand.size.x * direction.x,0, inHand.size.z * direction.z).magnitude * 2.5f, 1 << 6))
+            {
+                
+                if (hit1.distance < retVal) retVal = hit1.distance;
+            }
+        }
+        return retVal;
+    }
 }
