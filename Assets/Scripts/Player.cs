@@ -63,8 +63,6 @@ public class Player : MonoBehaviour
         rotated = false;
         //Указывает ли на поверхность, куда можно поставить
         inHand.canStand = onFocus.flatTop && (Mathf.Abs(hit.point.y - (onFocus.transform.position.y + onFocus.size.y)) < 0.01f) && (onFocus != null);
-
-        text.text = Mathf.Abs(hit.point.y - (onFocus.transform.position.y + onFocus.size.y)) < 0.01f ? "" : Mathf.Abs(hit.point.y - (onFocus.transform.position.y + onFocus.size.y)).ToString();
         
 
         if (!inHand.canStand) return;
@@ -73,10 +71,8 @@ public class Player : MonoBehaviour
         offset = Vector3.zero; 
 
         inHand.canStand &= checkSpaceUnder(false,true);
-        
-        //if (inHand.canStand) inHand.canStand &= checkAround();
-        
-        //if (inHand.canStand) inHand.canStand &= checkSpaceUnder(false, false);
+        if (inHand.canStand) inHand.canStand &= checkAround();
+        if (inHand.canStand) inHand.canStand &= checkSpaceUnder(false, false);
         
         //если нельзя поставить, то пробуем повернуть
         if (!inHand.canStand)
@@ -87,10 +83,8 @@ public class Player : MonoBehaviour
             offset = Vector3.zero;
             inHand.canStand &= checkSpaceUnder(true,true);
         
-            //if (inHand.canStand) inHand.canStand &= checkAround(true);
-        
-            //if (inHand.canStand) inHand.canStand &= checkSpaceUnder(true,false);
-        
+            if (inHand.canStand) inHand.canStand &= checkAround(true);
+            if (inHand.canStand) inHand.canStand &= checkSpaceUnder(true, false);
             if (inHand.canStand)
             {
                 inHand.rotate();
@@ -134,47 +128,10 @@ public class Player : MonoBehaviour
             delta -= Vector3.back * hit1.distance;
         if (correcting)
         {
-            offset += delta;
+            offset = delta;
             return true;
         }
-        else
-        {
-            return (delta == Vector3.zero);
-        }
-        /*
-        bool space = false;
-        if ((hit.point.x + offset.x - size.x / 2) < onFocus.getBorder(Border.Left))
-        {
-            space = true;
-            if (!offseting  && offset.x != 0) return false;
-        
-            delta -= Vector3.left * (onFocus.getBorder(Border.Left) - (hit.point.x - size.x / 2));
-        }
-        if ((hit.point.x + offset.x + size.x / 2) > onFocus.getBorder(Border.Right))
-        {
-            if (!offseting && offset.x != 0) return false;
-            if (space) return false;
-        
-            delta += Vector3.right * (onFocus.getBorder(Border.Right) - (hit.point.x + size.x / 2));
-        }
-        space = false;
-        if ((hit.point.z + offset.z - size.z / 2) < onFocus.getBorder(Border.Front)) 
-        {
-            if (!offseting && offset.z != 0) return false;
-            delta -= Vector3.back * (onFocus.getBorder(Border.Front) - (hit.point.z - size.z / 2));
-            space = true;
-        
-        }
-        if ((hit.point.z + offset.z + size.z / 2) > onFocus.getBorder(Border.Back))
-        {
-            if (!offseting && offset.z != 0) return false;
-            if (space) return false;
-            delta += Vector3.forward * (onFocus.getBorder(Border.Back) - (hit.point.z + size.z / 2));
-      
-        }
-        offset += delta;
-        return true;
-        */
+        else return (delta == Vector3.zero);
       
     }
     
@@ -183,34 +140,36 @@ public class Player : MonoBehaviour
     {
         
         Vector3 size = !rotated ? inHand.size : new Vector3(inHand.size.z, inHand.size.y, inHand.size.x);
+        
         float[] hits = new float[4];
-        Vector3 rayStart = hit.point + offset;
+        Vector3 rayStart = hit.point ;
         hits[0] = localRays(rayStart, 4, Vector3.right);
         hits[1] = localRays(rayStart, 4, Vector3.forward);
         hits[2] = localRays(rayStart, 4, Vector3.left, hits[0] < size.x);
         hits[3] = localRays(rayStart, 4, Vector3.back, hits[1] < size.z);
 
         Vector3 delta = Vector3.zero;
-        if (hits[0] < size.x) delta += Vector3.left * (size.x - hits[0]);
-        else if (hits[2] < size.x) delta += Vector3.right * (size.x - hits[2]);
-        if (hits[1] < size.z) delta += Vector3.back * (size.z - hits[1]);
-        else if (hits[3] < size.z) delta += Vector3.forward * (size.z - hits[3]);
-        
+        if (hits[0] < size.x / 2) delta += Vector3.left * (size.x / 2 - hits[0]);
+        if (hits[2] < size.x / 2) delta += Vector3.right * (size.x / 2 - hits[2]);
+        if (hits[1] < size.z / 2) delta += Vector3.back * (size.z / 2 - hits[1]);
+        if (hits[3] < size.z / 2) delta += Vector3.forward * (size.z / 2 - hits[3]);
+        if (delta == Vector3.zero) return true;
+        if (hits[2] + hits[0] < size.x) return false;
+        if (hits[3] + hits[1] < size.z) return false;
 
-
-        //text.text = string.Format("R:{0:0.0}/{1:0.0}\nF:{2:0.0}/{3:0.0}\nL:{4:0.0}/{5:0.0}\nB:{6:0.0}/{7:0.0}", hits[0], delta.x, hits[1], delta.z, hits[2], delta.x, hits[3], delta.z);
-        if (((hits[0] < size.x) || (hits[2] < size.x)) &&
-            ((hits[1] < size.z) || (hits[3] < size.z)))
+        text.text = string.Format("R:{0:0.0}/{1:0.0}\nF:{2:0.0}/{3:0.0}\nL:{4:0.0}/{5:0.0}\nB:{6:0.0}/{7:0.0}", hits[0], delta.x, hits[1], delta.z, hits[2], delta.x, hits[3], delta.z);
+        if (((hits[0] < size.x / 2) || (hits[2] < size.x / 2)) &&
+            ((hits[1] < size.z / 2) || (hits[3] < size.z / 2)))
         {
             if (size.x - Mathf.Abs(delta.x) > size.z - Mathf.Abs(delta.z))
                 delta.z = 0;
             else delta.x = 0;
         }
-        
-        if (hits[2] + hits[0] < size.x && Mathf.Abs(delta.z) > 0) return false;
-        if (hits[3] + hits[1] < size.z && Mathf.Abs(delta.x) > 0) return false;
+        if ((Mathf.Sign(delta.x) != Mathf.Sign(offset.x) && offset.x != 0)
+            || Mathf.Sign(delta.z) != Mathf.Sign(offset.z) && offset.z != 0) return false;
         offset += delta;
         return true;
+        
     }
 
     public float localRays(Vector3 center, int rays, Vector3 direction, bool invert = false)
@@ -221,7 +180,8 @@ public class Player : MonoBehaviour
         float retVal = 10f;
         for (int i = - rays / 2; i <= rays / 2; i++)
         {
-            if (Physics.Raycast(center + raysLine * i  - new Vector3 (direction.x * size.x / 2, 0, direction.z * size.z / 2) * (invert ? -1 : 1), direction, out hit1, new Vector3(size.x * direction.x,0, size.z * direction.z).magnitude * 2.5f, 1 << 6))
+            //if (Physics.Raycast(center + raysLine * i  - 0 * new Vector3 (direction.x * size.x / 2, 0, direction.z * size.z / 2) * (invert ? -1 : 1), direction, out hit1, new Vector3(size.x * direction.x,0, size.z * direction.z).magnitude * 2.5f, 1 << 6))
+            if (Physics.Raycast(center + raysLine * i, direction, out hit1, new Vector3(size.x / 2 * direction.x, 0, size.z / 2 * direction.z).magnitude * 2.5f, 1 << 6))
             {
                 
                 if (hit1.distance < retVal) retVal = hit1.distance;
