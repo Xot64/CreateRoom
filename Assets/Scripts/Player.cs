@@ -62,25 +62,35 @@ public class Player : MonoBehaviour
     {
         rotated = false;
         //”казывает ли на поверхность, куда можно поставить
-        inHand.canStand = onFocus.flatTop && (Mathf.Abs(hit.point.y - (onFocus.transform.position.y + onFocus.size.y)) < 0.01) && (onFocus != null);
+        inHand.canStand = onFocus.flatTop && (Mathf.Abs(hit.point.y - (onFocus.transform.position.y + onFocus.size.y)) < 0.01f) && (onFocus != null);
+
+        text.text = Mathf.Abs(hit.point.y - (onFocus.transform.position.y + onFocus.size.y)) < 0.01f ? "" : Mathf.Abs(hit.point.y - (onFocus.transform.position.y + onFocus.size.y)).ToString();
+        
+
         if (!inHand.canStand) return;
         
         //проверка поставки на объект
-        offset = Vector3.zero;
+        offset = Vector3.zero; 
+
         inHand.canStand &= checkSpaceUnder();
-        if (!inHand.canStand) return;
-        inHand.canStand &= checkAround();
-        if (!inHand.canStand) return;
-        inHand.canStand &= checkSpaceUnder(false, false);
+        
+        if (inHand.canStand) inHand.canStand &= checkAround();
+        
+        if (inHand.canStand) inHand.canStand &= checkSpaceUnder(false, false);
+        
         //если нельз€ поставить, то пробуем повернуть
         if (!inHand.canStand)
         {
+            text.text += " O \n";
             inHand.canStand = true;
             rotated = true;
             offset = Vector3.zero;
             inHand.canStand &= checkSpaceUnder(true);
-            inHand.canStand &= checkAround(true);
-            inHand.canStand &= checkSpaceUnder(true,false);
+        
+            if (inHand.canStand) inHand.canStand &= checkAround(true);
+        
+            if (inHand.canStand) inHand.canStand &= checkSpaceUnder(true,false);
+        
             if (inHand.canStand)
             {
                 inHand.rotate();
@@ -97,15 +107,12 @@ public class Player : MonoBehaviour
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out hit, Camera.main.transform.position.magnitude, 1 << 6))
         {
-            
             onFocus = hit.transform.GetComponentInParent<StatObject>();
-            text.text = onFocus.name + "\n" + onFocus.tag;
 
         }
         else
         {
             onFocus = null;
-            text.text = "";
         }
         
     }
@@ -114,17 +121,20 @@ public class Player : MonoBehaviour
     {
         Vector3 size = !rotated ? inHand.size : new Vector3(inHand.size.z, inHand.size.y, inHand.size.x);
         Vector3 delta = Vector3.zero;
+        text.text += "\n---";
         bool space = false;
         if ((hit.point.x + offset.x - size.x / 2) < onFocus.getBorder(Border.Left))
         {
             space = true;
             if (!offseting  && offset.x != 0) return false;
+            text.text += "L ";
             delta -= Vector3.left * (onFocus.getBorder(Border.Left) - (hit.point.x - size.x / 2));
         }
         if ((hit.point.x + offset.x + size.x / 2) > onFocus.getBorder(Border.Right))
         {
             if (!offseting && offset.x != 0) return false;
             if (space) return false;
+            text.text += "R ";
             delta += Vector3.right * (onFocus.getBorder(Border.Right) - (hit.point.x + size.x / 2));
         }
         space = false;
@@ -133,12 +143,14 @@ public class Player : MonoBehaviour
             if (!offseting && offset.z != 0) return false;
             delta -= Vector3.back * (onFocus.getBorder(Border.Front) - (hit.point.z - size.z / 2));
             space = true;
+            text.text += "F ";
         }
         if ((hit.point.z + offset.z + size.z / 2) > onFocus.getBorder(Border.Back))
         {
             if (!offseting && offset.z != 0) return false;
             if (space) return false;
             delta += Vector3.forward * (onFocus.getBorder(Border.Back) - (hit.point.z + size.z / 2));
+            text.text += "B ";
         }
         offset += delta;
         return true;
@@ -148,6 +160,7 @@ public class Player : MonoBehaviour
     
     public bool checkAround(bool rotated = false)
     {
+        
         Vector3 size = !rotated ? inHand.size : new Vector3(inHand.size.z, inHand.size.y, inHand.size.x);
         float[] hits = new float[4];
         Vector3 rayStart = hit.point + offset;
@@ -163,6 +176,7 @@ public class Player : MonoBehaviour
         else if (hits[3] < size.z) delta += Vector3.forward * (size.z - hits[3]);
         
 
+
         //text.text = string.Format("R:{0:0.0}/{1:0.0}\nF:{2:0.0}/{3:0.0}\nL:{4:0.0}/{5:0.0}\nB:{6:0.0}/{7:0.0}", hits[0], delta.x, hits[1], delta.z, hits[2], delta.x, hits[3], delta.z);
         if (((hits[0] < size.x) || (hits[2] < size.x)) &&
             ((hits[1] < size.z) || (hits[3] < size.z)))
@@ -171,6 +185,7 @@ public class Player : MonoBehaviour
                 delta.z = 0;
             else delta.x = 0;
         }
+        
         if (hits[2] + hits[0] < size.x && Mathf.Abs(delta.z) > 0) return false;
         if (hits[3] + hits[1] < size.z && Mathf.Abs(delta.x) > 0) return false;
         offset += delta;
