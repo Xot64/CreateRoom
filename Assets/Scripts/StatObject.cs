@@ -6,21 +6,25 @@ public class StatObject : MonoBehaviour
 {
     public GameObject body;
     public Vector3 size;
-    
+    public bool flatTop;
+
     // Start is called before the first frame update
     protected virtual void Start()
     {
-        size = body.GetComponent<Renderer>().bounds.size;
-   
-    }
 
+        reSize();
+    }
+    protected void reSize()
+    {
+        size = body.GetComponent<Renderer>().bounds.size;
+    }
     public float getBorder(Border b)
     {
         switch (b)
         {
             case Border.Left:
                 return transform.position.x - size.x / 2;
-                
+
             case Border.Right:
                 return transform.position.x + size.x / 2;
 
@@ -34,6 +38,8 @@ public class StatObject : MonoBehaviour
                 return getBorder(Border.Left);
         }
     }
+
+    
 }
 public enum Border
 {

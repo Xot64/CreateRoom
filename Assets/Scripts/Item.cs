@@ -6,7 +6,7 @@ public class Item : StatObject
 {
     public Vector3 oldPosition;
     public bool canStand;
-    Renderer my_R;
+    Renderer[] my_R;
     public Color holdColor = Color.yellow;
     public Color invisibleColor = new Color(1,0,0,0.5f);
     public Color visibleColor = Color.green;
@@ -14,7 +14,7 @@ public class Item : StatObject
     {
         base.Start();
         oldPosition = transform.position;
-        my_R = body.GetComponent<Renderer>();
+        my_R = body.GetComponentsInChildren<Renderer>();
         Recolor(false);
     }
     private void Update()
@@ -32,7 +32,7 @@ public class Item : StatObject
         MoveToLayer(6);
         if (canStand)
         {
-            transform.SetParent(Parent.parent);
+            transform.SetParent(Parent);
             Debug.Log("Put: " + name);
             oldPosition = transform.position;
         }
@@ -49,8 +49,18 @@ public class Item : StatObject
     {
         if (onDrag)
         {
-            my_R.material.color = canStand ? visibleColor : invisibleColor;
+            foreach(Renderer r in my_R) r.material.color = canStand ? visibleColor : invisibleColor;
         }
-        else my_R.material.color = holdColor;
+        else foreach(Renderer r in my_R) r.material.color = holdColor;
+    }
+
+    public void rotate()
+    {
+        //float t = size.x;
+        //size.x = size.z;
+        //size.z = t;
+        transform.eulerAngles = Vector3.up * 90 - transform.eulerAngles;
+        reSize();
+
     }
 }
