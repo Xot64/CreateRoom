@@ -72,24 +72,24 @@ public class Player : MonoBehaviour
         //проверка поставки на объект
         offset = Vector3.zero; 
 
-        inHand.canStand &= checkSpaceUnder();
+        inHand.canStand &= checkSpaceUnder(false,true);
         
-        if (inHand.canStand) inHand.canStand &= checkAround();
+        //if (inHand.canStand) inHand.canStand &= checkAround();
         
-        if (inHand.canStand) inHand.canStand &= checkSpaceUnder(false, false);
+        //if (inHand.canStand) inHand.canStand &= checkSpaceUnder(false, false);
         
         //если нельзя поставить, то пробуем повернуть
         if (!inHand.canStand)
         {
-            text.text += " O \n";
+            
             inHand.canStand = true;
             rotated = true;
             offset = Vector3.zero;
-            inHand.canStand &= checkSpaceUnder(true);
+            inHand.canStand &= checkSpaceUnder(true,true);
         
-            if (inHand.canStand) inHand.canStand &= checkAround(true);
+            //if (inHand.canStand) inHand.canStand &= checkAround(true);
         
-            if (inHand.canStand) inHand.canStand &= checkSpaceUnder(true,false);
+            //if (inHand.canStand) inHand.canStand &= checkSpaceUnder(true,false);
         
             if (inHand.canStand)
             {
@@ -117,24 +117,44 @@ public class Player : MonoBehaviour
         
     }
     public Vector3 offset;
-    public bool checkSpaceUnder(bool rotated = false, bool offseting = true)
+    public bool checkSpaceUnder(bool rotated = false, bool correcting = true)
     {
         Vector3 size = !rotated ? inHand.size : new Vector3(inHand.size.z, inHand.size.y, inHand.size.x);
+        if (onFocus.size.x - size.x < -0.001f || onFocus.size.z - size.z < -0.001f) return false;
+
         Vector3 delta = Vector3.zero;
-        text.text += "\n---";
+        RaycastHit hit1;
+        if (Physics.Raycast(hit.point + offset + Vector3.left * size.x / 2 + Vector3.down * 0.01f,          Vector3.right,   out hit1, size.x, 1 << 6))
+            delta -= Vector3.left * hit1.distance;
+        else if  (Physics.Raycast(hit.point + offset + Vector3.right * size.x / 2 + Vector3.down * 0.01f,   Vector3.left,    out hit1, size.x, 1 << 6))
+            delta -= Vector3.right * hit1.distance;
+        if (Physics.Raycast(hit.point + offset + Vector3.forward * size.z / 2 + Vector3.down * 0.01f,       Vector3.back,    out hit1, size.z, 1 << 6))
+            delta -= Vector3.forward * hit1.distance;
+        else if (Physics.Raycast(hit.point + offset + Vector3.back * size.z / 2 + Vector3.down * 0.01f,     Vector3.forward, out hit1, size.z, 1 << 6))
+            delta -= Vector3.back * hit1.distance;
+        if (correcting)
+        {
+            offset += delta;
+            return true;
+        }
+        else
+        {
+            return (delta == Vector3.zero);
+        }
+        /*
         bool space = false;
         if ((hit.point.x + offset.x - size.x / 2) < onFocus.getBorder(Border.Left))
         {
             space = true;
             if (!offseting  && offset.x != 0) return false;
-            text.text += "L ";
+        
             delta -= Vector3.left * (onFocus.getBorder(Border.Left) - (hit.point.x - size.x / 2));
         }
         if ((hit.point.x + offset.x + size.x / 2) > onFocus.getBorder(Border.Right))
         {
             if (!offseting && offset.x != 0) return false;
             if (space) return false;
-            text.text += "R ";
+        
             delta += Vector3.right * (onFocus.getBorder(Border.Right) - (hit.point.x + size.x / 2));
         }
         space = false;
@@ -143,18 +163,19 @@ public class Player : MonoBehaviour
             if (!offseting && offset.z != 0) return false;
             delta -= Vector3.back * (onFocus.getBorder(Border.Front) - (hit.point.z - size.z / 2));
             space = true;
-            text.text += "F ";
+        
         }
         if ((hit.point.z + offset.z + size.z / 2) > onFocus.getBorder(Border.Back))
         {
             if (!offseting && offset.z != 0) return false;
             if (space) return false;
             delta += Vector3.forward * (onFocus.getBorder(Border.Back) - (hit.point.z + size.z / 2));
-            text.text += "B ";
+      
         }
         offset += delta;
         return true;
-
+        */
+      
     }
     
     
